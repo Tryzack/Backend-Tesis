@@ -25,6 +25,100 @@ class UserService {
 			.execute();
 	}
 
+	async specialGetUserById(id: string) {
+		const user = await db
+			.selectFrom('users')
+			.leftJoin(
+				db
+					.selectFrom('user_emissions')
+					.select([
+						'user_id',
+						'id as emissions_id',
+						'impact',
+						'direct_emissions',
+						'indirect_emissions',
+						'other_emissions',
+						'created_at',
+						'updated_at',
+					])
+					.as('emissions'),
+				'emissions.user_id',
+				'users.id',
+			)
+			.leftJoin(
+				db
+					.selectFrom('user_followers')
+					.select([
+						'user_id',
+						sql<number>`COUNT(user_follower)`.as('followers_nu'),
+					])
+					.groupBy('user_id')
+					.as('follower_counts'),
+				'follower_counts.user_id',
+				'users.id',
+			)
+			.leftJoin(
+				db
+					.selectFrom('user_followers')
+					.select([
+						'user_follower',
+						sql<number>`COUNT(user_id)`.as('following_nu'),
+					])
+					.groupBy('user_follower')
+					.as('following_counts'),
+				'following_counts.user_follower',
+				'users.id',
+			)
+			.leftJoin(
+				db
+					.selectFrom('activities')
+					.where('completed', '=', true) // Filter only completed activities
+					.select([
+						'user_id',
+						sql<number>`COUNT(*)`.as('activities_nu'),
+					])
+					.groupBy('user_id')
+					.as('activity_counts'),
+				'activity_counts.user_id',
+				'users.id',
+			)
+			.leftJoin(
+				db
+					.selectFrom('user_followers')
+					.select(['user_id', sql<boolean>`TRUE`.as('is_following')])
+					.as('user_follows'),
+				'user_follows.user_id',
+				'users.id',
+			)
+			.where('users.id', '=', id)
+			.select([
+				'users.id',
+				'users.fname',
+				'users.lname',
+				'users.username',
+				'users.biography',
+				'users.address',
+				'users.image',
+				'users.birth_date',
+				'emissions.emissions_id',
+				'emissions.impact',
+				'emissions.direct_emissions',
+				'emissions.indirect_emissions',
+				'emissions.other_emissions',
+				'emissions.created_at',
+				'emissions.updated_at',
+				sql<number>`COALESCE(follower_counts.followers_nu, 0)`.as('followers_nu'),
+				sql<number>`COALESCE(following_counts.following_nu, 0)`.as('following_nu'),
+				sql<number>`COALESCE(activity_counts.activities_nu, 0)`.as('activities_nu'),
+			])
+			.executeTakeFirst();
+
+		if (!user) {
+			throw new NotFoundError('User not found');
+		}
+		const posts = await this.getUserPosts(id, 1); // Get first 10 posts
+		return { user, posts };
+	}
 	async getUserById(id: string, requesterId: string) {
 		const user = await db
 			.selectFrom('users')

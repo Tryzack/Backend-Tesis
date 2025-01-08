@@ -1,4 +1,4 @@
-import { create, getNumericDate, verify } from 'https://deno.land/x/djwt/mod.ts';
+import { create, getNumericDate, verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts';
 import { ExpiredTokenError } from './errors/httpErrors.ts';
 
 // Create a CryptoKey from a string secret
@@ -21,7 +21,7 @@ export async function generateToken(
 ): Promise<string> {
 	const token = await create(
 		{ alg: 'HS512', typ: 'JWT' },
-		{ ...payload, exp: getNumericDate(expiresIn) },
+		{ ...payload, exp: getNumericDate(Date.now() / 1000 + expiresIn) },
 		jwtSecret,
 	);
 	return token;

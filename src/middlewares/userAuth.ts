@@ -18,7 +18,8 @@ export async function userAuth(req: Request, res: Response, next: NextFunction):
 			return;
 		}
 		try {
-			const user = await userService.getUserById(payload.id as string);
+			const user = await userService.specialGetUserById(payload.id as string);
+			console.log(user);
 			if (!user) {
 				res.status(401).json({ message: 'Invalid token' });
 			}
