@@ -58,7 +58,7 @@ Deno.serve(
 		port: Number(Deno.env.get('STATIC_SERVER_PORT')),
 		onListen() {
 			console.log(
-				`Static file server running on http://localhost:${Deno.env.get('STATIC_SERVER_PORT')}/`
+				`Static file server running on http://0.0.0.0:${Deno.env.get('STATIC_SERVER_PORT')}/`
 			);
 		},
 	},
